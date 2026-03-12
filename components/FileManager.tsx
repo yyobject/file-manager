@@ -8,9 +8,10 @@ import { FileNode } from '@/lib/files';
 interface FileManagerProps {
   isOpen: boolean;
   onClose: () => void;
+  standalone?: boolean;  // 是否为独立模式（全屏，不是抽屉）
 }
 
-export default function FileManager({ isOpen, onClose }: FileManagerProps) {
+export default function FileManager({ isOpen, onClose, standalone = false }: FileManagerProps) {
   const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [loading, setLoading] = useState(false);
@@ -127,6 +128,68 @@ export default function FileManager({ isOpen, onClose }: FileManagerProps) {
 
   if (!isOpen) return null;
 
+  // 独立模式：全屏显示，不是抽屉
+  if (standalone) {
+    return (
+      <div className="w-full h-full flex bg-gray-800">
+        {/* 文件树区域 */}
+        <div className="w-80 border-r border-gray-700 flex flex-col">
+          {/* 头部 */}
+          <div className="p-4 border-b border-gray-700">
+            <h2 className="text-lg font-semibold mb-3">我的文件</h2>
+
+            {/* 操作按钮 */}
+            <div className="flex gap-2">
+              <label className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm text-center cursor-pointer transition-colors">
+                {uploading ? '上传中...' : '上传文件'}
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  disabled={uploading}
+                />
+              </label>
+              <button
+                onClick={handleCreateFolder}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
+              >
+                新建文件夹
+              </button>
+            </div>
+          </div>
+
+          {/* 文件树 */}
+          <div className="flex-1 overflow-auto">
+            {loading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-gray-400">加载中...</div>
+              </div>
+            ) : (
+              <FileTree
+                files={files}
+                selectedFile={selectedFile}
+                onSelectFile={setSelectedFile}
+                onDeleteFile={handleDeleteFile}
+                onRefresh={loadFiles}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* 文件预览/编辑区域 */}
+        <div className="flex-1 overflow-hidden">
+          <FileViewer
+            file={selectedFile}
+            onSave={loadFiles}
+            onClose={() => setSelectedFile(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // 抽屉模式：原有逻辑
   return (
     <>
       {/* 遮罩层 */}
